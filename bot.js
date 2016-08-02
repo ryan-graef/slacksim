@@ -23,13 +23,6 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 			method: 'GET',
 		}
 
-		if(user == 'slacksim'){
-			rtm.sendMessage("You want me to do _WHAT_ to myself?", channelId, function(err, msg){
-
-			});
-			return;
-		}
-
 		console.log('firing request for: '+user);
 		var req = https.request(ops, function(res){
 			var body = '';
