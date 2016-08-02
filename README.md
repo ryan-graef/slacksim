@@ -8,4 +8,8 @@ Create constants.js file at root level with following variables exported:
 * botToken : the slack bot token for the slack bot you want to respond to queries
 * botId : the id of that slack bot so it can identify when it is summoned
 
+Node dependencies:
+* node-slack-sdk (https://github.com/slackhq/node-slack-sdk);
+* node https
+
 `node bot.js` to run the app
