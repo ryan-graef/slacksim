@@ -17,6 +17,7 @@ Optional, if using twitter parsing:
 Node dependencies:
 * node-slack-sdk (https://github.com/slackhq/node-slack-sdk);
 * node https
+
 Optional, if you want to use twitter parsing as well:
 * node Twitter
 
