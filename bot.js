@@ -17,7 +17,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 
     if(message.text && message.text.indexOf(botId) > - 1){
         if(message.text.indexOf('twitter') > -1){
-            if(constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
+            if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
                 var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(botId, '').replace(':', '');
                 var client = new Twitter({
                     consumer_key: constants.twitterConsumerKey,
