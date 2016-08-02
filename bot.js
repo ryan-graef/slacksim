@@ -1,6 +1,7 @@
 var RtmClient = require('@slack/client').RtmClient;
 var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
 var https = require('https');
+var Twitter = require('twitter');
 var constants = require('./constants');
 
 var token = constants.apiToken;
@@ -11,108 +12,146 @@ var rtm = new RtmClient(botToken);
 rtm.start();
 
 rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
-	console.log('Message: ', message);
+    console.log('Message: ', message);
+    var channelId = message.channel;
 
-	if(message.text && message.text.indexOf(botId) > - 1){
-		var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
-		var channelId = message.channel;
+    if(message.text && message.text.indexOf(botId) > - 1){
+        if(message.text.indexOf('twitter') > -1){
+            if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
+                var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(botId, '').replace(':', '');
+                var client = new Twitter({
+                    consumer_key: constants.twitterConsumerKey,
+                    consumer_secret: constants.twitterConsumerSecret,
+                    access_token_key: constants.twitterAccessTokenKey,
+                    access_token_secret: constants.twitterAccessTokenSecret
+                });
 
-		var ops = {
-			host: 'slack.com',
-			path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
-			method: 'GET',
-		}
+                console.log(handle);
+                var params = {screen_name: handle, count: 200};
+                client.get('statuses/user_timeline', params, function(error, tweets, response){
+                    if(!error){
+                        var messages = [];
+                        tweets.forEach(function (tweet){
+                            var message = tweet.text;
+                            if(message[message.length-1] != "."){
+                                message += ".";
+                            }
 
-		if(user == 'slacksim'){
-			rtm.sendMessage("You want me to do _WHAT_ to myself?", channelId, function(err, msg){
+                            //split words from messages
+                            var words = message.split(/\s+/g);
+                            words.forEach(function(word){
+                                messages.push(word);
+                            });
+                        });
 
-			});
-			return;
-		}
+                        markovChain(messages, handle, channelId);
+                    }else{
+                        console.log('Twitter error: ', error);
+                    }
+                });
+            }else{
+                rtm.sendMessage('Environment not configured for twitter parsing!', channelId, function(err, msg){
 
-		console.log('firing request for: '+user);
-		var req = https.request(ops, function(res){
-			var body = '';
-			res.on('data', function(d){
-				body += d;
-			});
-			res.on('end', function(){
-				//console.log('the messages were: ', body);
+                });
+            }
+        }else{
+            var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
 
-				var responseData = JSON.parse(body);
-				if(!responseData.messages || responseData.messages.total < 1){
-					console.log('no messages found for that user');
-					rtm.sendMessage("No messages found for: "+user, channelId, function(err, msg){
+            var ops = {
+                host: 'slack.com',
+                path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
+                method: 'GET',
+            }
 
-					});
-					return;
-				}
-				var messages = [];
-				responseData.messages.matches.forEach(function(match){
-					//make sure messages end in a period
-					var message = match.text;
-					if(message[message.length-1] != "."){
-						message += ".";
-					}
+            console.log('firing request for: '+user);
+            var req = https.request(ops, function(res){
+                var body = '';
+                res.on('data', function(d){
+                    body += d;
+                });
+                res.on('end', function(){
+                    //console.log('the messages were: ', body);
 
-					//split words from messages
-					var words = match.text.split(/\s+/g);
-					words.forEach(function(word){
-						messages.push(word);
-					});
-				}, this);
+                    var responseData = JSON.parse(body);
+                    if(!responseData.messages || responseData.messages.total < 1){
+                        console.log('no messages found for that user');
+                        rtm.sendMessage("No messages found for: "+user, channelId, function(err, msg){
 
-				var cache = {
-					'_START': []
-				};
+                        });
+                        return;
+                    }
+                    var messages = [];
+                    responseData.messages.matches.forEach(function(match){
+                        //make sure messages end in a period
+                        var message = match.text;
+                        if(message[message.length-1] != "."){
+                            message += ".";
+                        }
 
-				//format message data
-				cache['_START'].push(messages[0]);
-				for(var i = 0; i < messages.length - 1; i++){
-					if(!cache[messages[i]]){
-						cache[messages[i]] = [];
-					}
+                        //split words from messages
+                        var words = message.split(/\s+/g);
+                        words.forEach(function(word){
+                            messages.push(word);
+                        });
+                    }, this);
 
-					cache[messages[i]].push(messages[i+1]);
 
-					if(messages[i].match(/\.$/)){
-						cache['_START'].push(messages[i+1]);
-					}
-				}
+                    markovChain(messages, user, channelId);
+                });
+            });
+            req.end();
 
-				//form sentance
-				var currentWord = '_START';
-				var str = '';
-				var numWords = 5 + Math.floor(Math.random()*50);
-
-				while(numWords > 0){
-					var rand = Math.floor(Math.random()*cache[currentWord].length);
-					str += cache[currentWord][rand];
-
-					if(!cache[cache[currentWord][rand]]){
-						currentWord = '_START';
-						if(!cache[currentWord][rand].match(/\.$/)){
-							str += '. ';
-						}else{
-							str += ' ';
-						}
-					}else{
-						currentWord = cache[currentWord][rand];
-						numWords--;
-						str += ' ';
-					}
-				}
-
-				console.log(str);
-				rtm.sendMessage("@"+user + ": \""+str+"\"", channelId, function(err, msg){
-
-				});
-			});
-		});
-		req.end();
-
-		req.on('error', function(e){
-			console.error(e);
-		});
-	}
+            req.on('error', function(e){
+                console.error(e);
+            });
+        }
+    }
 });
+
+var markovChain = function(messages, user, channelId){
+    var cache = {
+        '_START': []
+    };
+
+    //format message data
+    cache['_START'].push(messages[0]);
+    for(var i = 0; i < messages.length - 1; i++){
+        if(!cache[messages[i]]){
+            cache[messages[i]] = [];
+        }
+
+        cache[messages[i]].push(messages[i+1]);
+
+        if(messages[i].match(/\.$/)){
+            cache['_START'].push(messages[i+1]);
+        }
+    }
+
+    //form sentance
+    var currentWord = '_START';
+    var str = '';
+    var numWords = 5 + Math.floor(Math.random()*50);
+
+    while(numWords > 0){
+        var rand = Math.floor(Math.random()*cache[currentWord].length);
+        str += cache[currentWord][rand];
+
+        if(!cache[cache[currentWord][rand]]){
+            currentWord = '_START';
+            if(!cache[currentWord][rand].match(/\.$/)){
+                str += '. ';
+            }else{
+                str += ' ';
+            }
+        }else{
+            currentWord = cache[currentWord][rand];
+            numWords--;
+            str += ' ';
+        }
+    }
+
+    console.log(str);
+    rtm.sendMessage("@"+user + ": \""+str+"\"", channelId, function(err, msg){
+
+    });
+}
