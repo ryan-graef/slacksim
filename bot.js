@@ -7,6 +7,8 @@ var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
 
+var ids = {}
+
 var rtm = new RtmClient(botToken);
 rtm.start();
 
@@ -15,6 +17,16 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 
 	if(message.text && message.text.indexOf(botId) > - 1){
 		var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
+		if(user.match(^<@*>$)){
+			if(ids[user] != null){
+				user = ids[user]
+			} else {
+				var croppedid = user.substring(2, user.length-2)
+				var id =  rtm.dataStore.getUserById(croppedid)
+				ids[user] = id
+				user = id
+			}
+		}
 		var channelId = message.channel;
 
 		var ops = {
