@@ -88,7 +88,7 @@ var markovChain = function(messages, user, channelId){
     //form sentence
     var currentWord = '_START';
     var str = '';
-    var numSentence = 1 + Math.floor(Math.random()*6);
+    var numSentences = 1 + Math.floor(Math.random()*6);
 
     while(numSentences > 0){
         var rand = Math.floor(Math.random()*cache[currentWord].length);
