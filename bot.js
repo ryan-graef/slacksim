@@ -33,9 +33,9 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 
     if(message.text && message.text.indexOf(botId) > - 1){
         var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
-            var regex = '^<@\..*>$';
+        var regex = '^<@\..*>$';
 
-        if(user.match(query)){
+        if(user.match(regex)){
             if(ids[user] != null){
                 user = ids[user]
             } else {
