@@ -16,7 +16,7 @@ var constants = require('./constants');
 var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
-var atBot = "<@" + botId + ">:";
+var atBot = "<@" + botId + ">";
 
 var ids = {};
 
@@ -33,7 +33,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     var channelId = message.channel;
 
     if(message.text && message.text.indexOf(botId) > - 1){
-        var user = message.text.replace(/ /g, '').replace(atBot, '');
+        var user = message.text.replace(/ /g, '').replace(atBot, '').replace(':','');
         var start = user.indexOf('<@');
         var end = user.indexOf('>');
         var userId = user.substring(start, end+1);
@@ -47,18 +47,15 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
         }
         if(message.text.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
-                var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(atBot, '');
+                var handle = message.text.replace('twitter', '');
 
                 getTwitterMessages(handle, channelId);
-
             }else{
                 rtm.sendMessage('Environment not configured for twitter parsing!', channelId, function(err, msg){
 
                 });
             }
         }else{
-            var user = message.text.replace(/ /g, '').replace(atBot, '');
-
             getSlackMessages(user, channelId);
         }
     }
