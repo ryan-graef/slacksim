@@ -41,9 +41,9 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
             user = user.replace(userId, ids[userId])
         } else {
           var croppedid = userId.substring(2, userId.length-1)
-          var id =  rtm.dataStore.getUserById(croppedid)
-          ids[userId] = id
-          user.replace(userId, id)
+          var name =  rtm.dataStore.getUserById(croppedid).name
+          ids[userId] = name
+          user.replace(userId, name)
         }
         if(user.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
