@@ -16,6 +16,7 @@ var constants = require('./constants');
 var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
+var botIdentifier = '<@'+constants.botId+'>';
 
 var rtm = new RtmClient(botToken);
 rtm.start();
@@ -29,49 +30,22 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     console.log('Message: ', message);
     var channelId = message.channel;
 
-    if(message.text && message.text.indexOf(botId) > - 1){
+    if(message.text && message.text.indexOf(botIdentifier) > - 1 && message.user != botId){
         if(message.text.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
-                var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(botId, '').replace(':', '');
-                var client = new Twitter({
-                    consumer_key: constants.twitterConsumerKey,
-                    consumer_secret: constants.twitterConsumerSecret,
-                    access_token_key: constants.twitterAccessTokenKey,
-                    access_token_secret: constants.twitterAccessTokenSecret
-                });
+                var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(botIdentifier, '').replace(':', '');
 
-                console.log(handle);
-                var params = {screen_name: handle, count: 200};
-                client.get('statuses/user_timeline', params, function(error, tweets, response){
-                    if(!error){
-                        var messages = [];
-                        tweets.forEach(function (tweet){
-                            var message = tweet.text;
-                            if(message[message.length-1] != "."){
-                                message += ".";
-                            }
+                getTwitterMessages(handle, channelId);
 
-                            //split words from messages
-                            var words = message.split(/\s+/g);
-                            words.forEach(function(word){
-                                messages.push(word);
-                            });
-                        });
-
-                        markovChain(messages, handle, channelId);
-                    }else{
-                        console.log('Twitter error: ', error);
-                    }
-                });
             }else{
                 rtm.sendMessage('Environment not configured for twitter parsing!', channelId, function(err, msg){
 
                 });
             }
         }else{
-            var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
+            var user = message.text.replace(/ /g, '').replace(botIdentifier, '').replace(':', '');
 
-            getUserMessages(user, channelId);
+            getSlackMessages(user, channelId);
         }
     }
 });
@@ -88,7 +62,7 @@ var pingChannel = function(){
     console.log(rtm.dataStore.users[userIds[index]]);
 
     if(!pickedUser.isBot && pickedUser.name != "slackbot"){
-        getUserMessages(pickedUser.name, constants.simChannelId);
+        getSlackMessages(pickedUser.name, constants.simChannelId);
     }
 }
 
@@ -114,22 +88,26 @@ var markovChain = function(messages, user, channelId){
     //form sentance
     var currentWord = '_START';
     var str = '';
-    var numWords = 5 + Math.floor(Math.random()*50);
+    var numSentances = 1 + Math.floor(Math.random()*6);
 
-    while(numWords > 0){
+    while(numSentances > 0){
         var rand = Math.floor(Math.random()*cache[currentWord].length);
-        str += cache[currentWord][rand];
+        var newWord = cache[currentWord][rand];
+        str += newWord;
 
-        if(!cache[cache[currentWord][rand]]){
+        //if we reached the end of the chain or a word with puncuation, we reached the end of the sentance.
+        if(!cache[newWord] || newWord[newWord.length-1] == '.' || newWord[newWord.length-1] == "?" || newWord[newWord.length-1] == "!"){
             currentWord = '_START';
-            if(!cache[currentWord][rand].match(/\.$/)){
+                
+            if(!cache[newWord]){
                 str += '. ';
             }else{
                 str += ' ';
             }
+
+            numSentances--;
         }else{
-            currentWord = cache[currentWord][rand];
-            numWords--;
+            currentWord = newWord;
             str += ' ';
         }
     }
@@ -140,7 +118,40 @@ var markovChain = function(messages, user, channelId){
     });
 }
 
-var getUserMessages = function(user, channelId){
+var getTwitterMessages = function(handle, channelId){
+    var client = new Twitter({
+        consumer_key: constants.twitterConsumerKey,
+        consumer_secret: constants.twitterConsumerSecret,
+        access_token_key: constants.twitterAccessTokenKey,
+        access_token_secret: constants.twitterAccessTokenSecret
+    });
+
+    console.log(handle);
+    var params = {screen_name: handle, count: 200};
+    client.get('statuses/user_timeline', params, function(error, tweets, response){
+        if(!error){
+            var messages = [];
+            tweets.forEach(function (tweet){
+                var message = tweet.text.trim();
+                if(message[message.length-1] != "." && message[message.length-1] != "!" && message[message.length -1] != "?"){
+                    message += ".";
+                }
+
+                //split words from messages
+                var words = message.split(/\s+/g);
+                words.forEach(function(word){
+                    messages.push(word);
+                });
+            });
+
+            markovChain(messages, handle, channelId);
+        }else{
+            console.log('Twitter error: ', error);
+        }
+    });
+}
+
+var getSlackMessages = function(user, channelId){
     var ops = {
         host: 'slack.com',
         path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
@@ -166,17 +177,20 @@ var getUserMessages = function(user, channelId){
             }
             var messages = [];
             responseData.messages.matches.forEach(function(match){
-                //make sure messages end in a period
-                var message = match.text;
-                if(message[message.length-1] != "."){
-                    message += ".";
-                }
+                var message = match.text.trim();
+                //ignore commands to the bot itself
+                if(message.indexOf(botIdentifier) == -1){
+                    //make sure messages end in a punctuation
+                    if(message[message.length-1] != "." && message[message.length-1] != "!" && message[message.length-1] != "?"){
+                       message += ".";
+                    }
 
-                //split words from messages
-                var words = message.split(/\s+/g);
-                words.forEach(function(word){
-                    messages.push(word);
-                });
+                    //split words from messages
+                    var words = message.split(/\s+/g);
+                    words.forEach(function(word){
+                        messages.push(word);
+                    });
+                }
             }, this);
 
 
