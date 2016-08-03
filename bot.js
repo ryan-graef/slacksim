@@ -190,7 +190,7 @@ var getSlackMessages = function(user, channelId){
             responseData.messages.matches.forEach(function(match){
                 var message = match.text.trim();
                 //ignore commands to the bot itself
-                if(message.indexOf(botIdentifier) == -1){
+                if(message.indexOf(atBot) == -1){
                     //make sure messages end in a punctuation
                     if(message[message.length-1] != "." && message[message.length-1] != "!" && message[message.length-1] != "?"){
                        message += ".";
