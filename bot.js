@@ -1,6 +1,14 @@
 var RtmClient = require('@slack/client').RtmClient;
 var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
 var https = require('https');
+var Twitter = null;
+
+try{
+    Twitter = require('twitter');
+}catch(e){
+    console.log('twitter not found.  For twitter integration, npm install Twitter');
+}
+
 var constants = require('./constants');
 
 var token = constants.apiToken;
@@ -9,6 +17,11 @@ var botId = constants.botId;
 
 var rtm = new RtmClient(botToken);
 rtm.start();
+
+rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function(){
+    //ping the channel every hour
+    setInterval(pingChannel, 60*60*1000);
+});
 
 rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     console.log('Message: ', message);
@@ -107,7 +120,6 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
                         });
                     }, this);
 
-					cache[messages[i]].push(messages[i+1]);
 
                     markovChain(messages, user, channelId);
                 });
