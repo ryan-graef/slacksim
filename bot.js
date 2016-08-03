@@ -32,7 +32,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     console.log('Message: ', message);
     var channelId = message.channel;
 
-    if(message.text && message.text.indexOf(botId) > - 1){
+    if(message.text && message.text.indexOf(atBot) > - 1 && message.user != botId){
         var user = message.text.replace(/ /g, '').replace(atBot, '').replace(':','');
         var start = user.indexOf('<@');
         var end = user.indexOf('>');
@@ -50,6 +50,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
                 var handle = message.text.replace('twitter', '');
 
                 getTwitterMessages(handle, channelId);
+
             }else{
                 rtm.sendMessage('Environment not configured for twitter parsing!', channelId, function(err, msg){
 
