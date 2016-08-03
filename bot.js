@@ -16,8 +16,9 @@ var constants = require('./constants');
 var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
+var atBot = "<@" + botId + ">:";
 
-var ids = {}
+var ids = {};
 
 var rtm = new RtmClient(botToken);
 rtm.start();
@@ -32,18 +33,17 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     var channelId = message.channel;
 
     if(message.text && message.text.indexOf(botId) > - 1){
-        var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
-        var regex = '^<@\..*>$';
-
-        if(user.match(regex)){
-            if(ids[user] != null){
-                user = ids[user]
-            } else {
-                var croppedid = user.substring(2, user.length-2)
-                var id =  rtm.dataStore.getUserById(croppedid)
-                ids[user] = id
-                user = id
-            }
+        var user = message.text.replace(/ /g, '').replace(atBot, '');
+        var start = user.indexOf('<@');
+        var end = user.indexOf('>');
+        var userId = user.substring(start, end+1);
+        if(ids[userId] != null){
+            user = user.replace(userId, ids[userId])
+        } else {
+          var croppedid = userWithId.substring(2, userWithId.length-1)
+          var id =  rtm.dataStore.getUserById(croppedid)
+          ids[userId] = id
+          user.replace(userId, id)
         }
         if(message.text.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
@@ -84,7 +84,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
                 });
             }
         }else{
-            var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
+            var user = message.text.replace(/ /g, '').replace(atBot, '');
 
             getUserMessages(user, channelId);
         }
