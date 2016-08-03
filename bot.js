@@ -1,5 +1,7 @@
 var RtmClient = require('@slack/client').RtmClient;
 var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
+var MemoryDataStore = require('@slack/client').MemoryDataStore;
+var CLIENT_EVENTS = require('@slack/client').CLIENT_EVENTS;
 var https = require('https');
 var Twitter = null;
 
@@ -15,12 +17,14 @@ var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
 
+var ids = {}
+
 var rtm = new RtmClient(botToken);
 rtm.start();
 
 rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function(){
-    //ping the channel every hour
-    setInterval(pingChannel, 60*60*1000);
+    //ping the channel every 4 hours
+    setInterval(pingChannel, 4*60*60*1000);
 });
 
 rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
@@ -29,7 +33,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 
     if(message.text && message.text.indexOf(botId) > - 1){
         var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
-            let regex = '^<@\..*>$';
+            var regex = '^<@\..*>$';
 
         if(user.match(query)){
             if(ids[user] != null){
@@ -82,56 +86,26 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
         }else{
             var user = message.text.replace(/ /g, '').replace(botId, '').replace(':', '');
 
-            var ops = {
-                host: 'slack.com',
-                path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
-                method: 'GET',
-            }
-
-            console.log('firing request for: '+user);
-            var req = https.request(ops, function(res){
-                var body = '';
-                res.on('data', function(d){
-                    body += d;
-                });
-                res.on('end', function(){
-                    //console.log('the messages were: ', body);
-
-                    var responseData = JSON.parse(body);
-                    if(!responseData.messages || responseData.messages.total < 1){
-                        console.log('no messages found for that user');
-                        rtm.sendMessage("No messages found for: "+user, channelId, function(err, msg){
-
-                        });
-                        return;
-                    }
-                    var messages = [];
-                    responseData.messages.matches.forEach(function(match){
-                        //make sure messages end in a period
-                        var message = match.text;
-                        if(message[message.length-1] != "."){
-                            message += ".";
-                        }
-
-                        //split words from messages
-                        var words = message.split(/\s+/g);
-                        words.forEach(function(word){
-                            messages.push(word);
-                        });
-                    }, this);
-
-
-                    markovChain(messages, user, channelId);
-                });
-            });
-            req.end();
-
-            req.on('error', function(e){
-                console.error(e);
-            });
+            getUserMessages(user, channelId);
         }
     }
 });
+
+var pingChannel = function(){
+    var pickedUser = {name: '', id: ''};
+    var userIds = Object.keys(rtm.dataStore.users);
+    var usersLength = userIds.length;
+
+    var index = Math.floor(Math.random()*usersLength);
+    pickedUser.name = rtm.dataStore.users[userIds[index]].name;
+    pickedUser.id = rtm.dataStore.users[userIds[index]].id;
+    pickedUser.isBot = rtm.dataStore.users[userIds[index]].is_bot;
+    console.log(rtm.dataStore.users[userIds[index]]);
+
+    if(!pickedUser.isBot && pickedUser.name != "slackbot"){
+        getUserMessages(pickedUser.name, constants.simChannelId);
+    }
+}
 
 var markovChain = function(messages, user, channelId){
     var cache = {
@@ -178,5 +152,55 @@ var markovChain = function(messages, user, channelId){
     console.log(str);
     rtm.sendMessage("@"+user + ": \""+str+"\"", channelId, function(err, msg){
 
+    });
+}
+
+var getUserMessages = function(user, channelId){
+    var ops = {
+        host: 'slack.com',
+        path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
+        method: 'GET',
+    }
+
+    console.log('firing request for: '+user);
+    var req = https.request(ops, function(res){
+        var body = '';
+        res.on('data', function(d){
+            body += d;
+        });
+        res.on('end', function(){
+            //console.log('the messages were: ', body);
+
+            var responseData = JSON.parse(body);
+            if(!responseData.messages || responseData.messages.total < 1){
+                console.log('no messages found for that user');
+                rtm.sendMessage("No messages found for: "+user, channelId, function(err, msg){
+
+                });
+                return;
+            }
+            var messages = [];
+            responseData.messages.matches.forEach(function(match){
+                //make sure messages end in a period
+                var message = match.text;
+                if(message[message.length-1] != "."){
+                    message += ".";
+                }
+
+                //split words from messages
+                var words = message.split(/\s+/g);
+                words.forEach(function(word){
+                    messages.push(word);
+                });
+            }, this);
+
+
+            markovChain(messages, user, channelId);
+        });
+    });
+    req.end();
+
+    req.on('error', function(e){
+        console.error(e);
     });
 }
