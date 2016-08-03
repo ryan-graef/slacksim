@@ -21,8 +21,8 @@ var rtm = new RtmClient(botToken);
 rtm.start();
 
 rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function(){
-    //ping the channel every hour
-    setInterval(pingChannel, 60*60*1000);
+    //ping the channel every 4 hours
+    setInterval(pingChannel, 4*60*60*1000);
 });
 
 rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
@@ -84,8 +84,12 @@ var pingChannel = function(){
     var index = Math.floor(Math.random()*usersLength);
     pickedUser.name = rtm.dataStore.users[userIds[index]].name;
     pickedUser.id = rtm.dataStore.users[userIds[index]].id;
+    pickedUser.isBot = rtm.dataStore.users[userIds[index]].is_bot;
+    console.log(rtm.dataStore.users[userIds[index]]);
 
-    getUserMessages(pickedUser.name, constants.simChannelId);
+    if(!pickedUser.isBot && pickedUser.name != "slackbot"){
+        getUserMessages(pickedUser.name, constants.simChannelId);
+    }
 }
 
 var markovChain = function(messages, user, channelId){
