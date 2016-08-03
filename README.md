@@ -7,6 +7,7 @@ Create constants.js file at root level with following variables exported:
 * apiToken : the slack Api token for your slack team.  Can not be the bot token, as the bot doesn't get API access.
 * botToken : the slack bot token for the slack bot you want to respond to queries
 * botId : the id of that slack bot so it can identify when it is summoned
+* simChannelId: the id of the channel that Slack bot will use to simulate slack discussion
 
 Optional, if using twitter parsing:
 * twitterConsumerKey: the key of your twitter dev account
