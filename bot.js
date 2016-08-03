@@ -1,15 +1,11 @@
-
 var RtmClient = require('@slack/client').RtmClient;
 var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
 var https = require('https');
-var Twitter = require('twitter');
 var constants = require('./constants');
 
 var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
-
-var ids = {}
 
 var rtm = new RtmClient(botToken);
 rtm.start();
@@ -111,6 +107,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
                         });
                     }, this);
 
+					cache[messages[i]].push(messages[i+1]);
 
                     markovChain(messages, user, channelId);
                 });
