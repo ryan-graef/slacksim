@@ -40,7 +40,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
         if(ids[userId] != null){
             user = user.replace(userId, ids[userId])
         } else {
-          var croppedid = userWithId.substring(2, userWithId.length-1)
+          var croppedid = userId.substring(2, userId.length-1)
           var id =  rtm.dataStore.getUserById(croppedid)
           ids[userId] = id
           user.replace(userId, id)
