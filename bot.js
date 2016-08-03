@@ -170,9 +170,6 @@ var getSlackMessages = function(user, channelId){
             var responseData = JSON.parse(body);
             if(!responseData.messages || responseData.messages.total < 1){
                 console.log('no messages found for that user');
-                rtm.sendMessage("No messages found for: "+user, channelId, function(err, msg){
-
-                });
                 return;
             }
             var messages = [];
