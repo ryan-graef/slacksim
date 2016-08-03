@@ -36,14 +36,16 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
         var user = message.text.replace(/ /g, '').replace(atBot, '').replace(':','');
         var start = user.indexOf('<@');
         var end = user.indexOf('>');
-        var userId = user.substring(start, end+1);
-        if(ids[userId] != null){
-            user = user.replace(userId, ids[userId])
-        } else {
-          var croppedid = userId.substring(2, userId.length-1)
-          var name =  rtm.dataStore.getUserById(croppedid).name
-          ids[userId] = name
-          user.replace(userId, name)
+        if (start > -1 && end > start) {
+            var userId = user.substring(start, end+1);
+            if(ids[userId] != null){
+                user = user.replace(userId, ids[userId])
+            } else {
+              var croppedid = userId.substring(2, userId.length-1)
+              var name =  rtm.dataStore.getUserById(croppedid).name
+              ids[userId] = name
+              user = user.replace(userId, name)
+            }
         }
         if(user.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
