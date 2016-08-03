@@ -45,9 +45,9 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
           ids[userId] = id
           user.replace(userId, id)
         }
-        if(message.text.indexOf('twitter') > -1){
+        if(user.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
-                var handle = message.text.replace('twitter', '');
+                var handle = user.replace('twitter', '');
 
                 getTwitterMessages(handle, channelId);
 
