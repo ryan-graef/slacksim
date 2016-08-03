@@ -113,7 +113,7 @@ var markovChain = function(messages, user, channelId){
     }
 
     console.log(str);
-    rtm.sendMessage("@"+user + ": \""+str+"\"", channelId, function(err, msg){
+    rtm.sendMessage("\""+str+"\"", channelId, function(err, msg){
 
     });
 }
