@@ -27,7 +27,7 @@ rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function(){
     setInterval(pingChannel, 4*60*60*1000);
 });
 
-rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
+rtm.on(RTM_EVENTS.MESSAGE, function (message){
     console.log('Message: ', message);
     var channelId = message.channel;
 
