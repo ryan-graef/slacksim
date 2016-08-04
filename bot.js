@@ -18,7 +18,6 @@ var botToken = constants.botToken;
 var botId = constants.botId;
 var atBot = "<@" + botId + ">";
 
-var ids = {};
 
 var rtm = new RtmClient(botToken);
 rtm.start();
@@ -38,14 +37,9 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
         var end = user.indexOf('>');
         if (start > -1 && end > start) {
             var userId = user.substring(start, end+1);
-            if(ids[userId] != null){
-                user = user.replace(userId, ids[userId])
-            } else {
-              var croppedid = userId.substring(2, userId.length-1)
-              var name =  rtm.dataStore.getUserById(croppedid).name
-              ids[userId] = name
-              user = user.replace(userId, name)
-            }
+            var croppedid = userId.substring(2, userId.length-1)
+            var name =  rtm.dataStore.getUserById(croppedid).name
+            user = user.replace(userId, name)
         }
         if(user.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
