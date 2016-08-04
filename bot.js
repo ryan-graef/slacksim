@@ -16,7 +16,9 @@ var constants = require('./constants');
 var token = constants.apiToken;
 var botToken = constants.botToken;
 var botId = constants.botId;
-var botIdentifier = '<@'+constants.botId+'>';
+var atBot = "<@" + botId + ">";
+
+var ids = {};
 
 var rtm = new RtmClient(botToken);
 rtm.start();
@@ -30,10 +32,24 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     console.log('Message: ', message);
     var channelId = message.channel;
 
-    if(message.text && message.text.indexOf(botIdentifier) > - 1 && message.user != botId){
-        if(message.text.indexOf('twitter') > -1){
+    if(message.text && message.text.indexOf(atBot) > - 1 && message.user != botId){
+        var user = message.text.replace(/ /g, '').replace(atBot, '').replace(':','');
+        var start = user.indexOf('<@');
+        var end = user.indexOf('>');
+        if (start > -1 && end > start) {
+            var userId = user.substring(start, end+1);
+            if(ids[userId] != null){
+                user = user.replace(userId, ids[userId])
+            } else {
+              var croppedid = userId.substring(2, userId.length-1)
+              var name =  rtm.dataStore.getUserById(croppedid).name
+              ids[userId] = name
+              user = user.replace(userId, name)
+            }
+        }
+        if(user.indexOf('twitter') > -1){
             if(Twitter && constants.twitterConsumerKey && constants.twitterConsumerKey !== ''){
-                var handle = message.text.replace('twitter', '').replace(/ /g, '').replace(botIdentifier, '').replace(':', '');
+                var handle = user.replace('twitter', '');
 
                 getTwitterMessages(handle, channelId);
 
@@ -43,8 +59,6 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
                 });
             }
         }else{
-            var user = message.text.replace(/ /g, '').replace(botIdentifier, '').replace(':', '');
-
             getSlackMessages(user, channelId);
         }
     }
@@ -176,7 +190,7 @@ var getSlackMessages = function(user, channelId){
             responseData.messages.matches.forEach(function(match){
                 var message = match.text.trim();
                 //ignore commands to the bot itself
-                if(message.indexOf(botIdentifier) == -1){
+                if(message.indexOf(atBot) == -1){
                     //make sure messages end in a punctuation
                     if(message[message.length-1] != "." && message[message.length-1] != "!" && message[message.length-1] != "?"){
                        message += ".";
