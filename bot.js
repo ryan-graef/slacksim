@@ -74,7 +74,7 @@ var pingChannel = function(){
     console.log(rtm.dataStore.users[userIds[index]]);
 
     if(!pickedUser.isBot && pickedUser.name != "slackbot"){
-        getSlackMessages(pickedUser.name, constants.simChannelId);
+        getSlackMessages(pickedUser.name, constants.simChannelId, true);
     }
 }
 
@@ -125,7 +125,8 @@ var markovChain = function(messages, user, channelId){
     }
 
     console.log(str);
-    rtm.sendMessage("\""+str+"\"", channelId, function(err, msg){
+    var userOut = user ? user + ':' : '';
+    rtm.sendMessage(userOut+"\""+str+"\"", channelId, function(err, msg){
 
     });
 }
@@ -163,7 +164,7 @@ var getTwitterMessages = function(handle, channelId){
     });
 }
 
-var getSlackMessages = function(user, channelId){
+var getSlackMessages = function(user, channelId, outputUser){
     var ops = {
         host: 'slack.com',
         path: '/api/search.messages?token='+token+'&count=1000&query=from:'+user,
@@ -209,7 +210,7 @@ var getSlackMessages = function(user, channelId){
             }, this);
 
 
-            markovChain(messages, user, channelId);
+            markovChain(messages, outputUser ? user : '', channelId);
         });
     });
     req.end();
