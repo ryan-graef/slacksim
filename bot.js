@@ -59,11 +59,7 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
 });
 
 var isFromDm = function(message){
-    if(message.channel && message.channel.id[0] == 'D'){
-        return true;
-    }else{
-        return false;
-    }
+    return (message.channel && message.channel.id[0] == 'D');
 }
 
 var pingChannel = function(){
