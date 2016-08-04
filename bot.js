@@ -93,17 +93,17 @@ var markovChain = function(messages, user, channelId){
         }
     }
 
-    //form sentance
+    //form sentence
     var currentWord = '_START';
     var str = '';
-    var numSentances = 1 + Math.floor(Math.random()*6);
+    var numSentences = 1 + Math.floor(Math.random()*6);
 
-    while(numSentances > 0){
+    while(numSentences > 0){
         var rand = Math.floor(Math.random()*cache[currentWord].length);
         var newWord = cache[currentWord][rand];
         str += newWord;
 
-        //if we reached the end of the chain or a word with puncuation, we reached the end of the sentance.
+        //if we reached the end of the chain or a word with puncuation, we reached the end of the sentence.
         if(!cache[newWord] || newWord[newWord.length-1] == '.' || newWord[newWord.length-1] == "?" || newWord[newWord.length-1] == "!"){
             currentWord = '_START';
                 
@@ -113,7 +113,7 @@ var markovChain = function(messages, user, channelId){
                 str += ' ';
             }
 
-            numSentances--;
+            numSentences--;
         }else{
             currentWord = newWord;
             str += ' ';
