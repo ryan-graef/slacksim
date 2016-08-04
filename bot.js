@@ -58,6 +58,14 @@ rtm.on(RTM_EVENTS.MESSAGE, function handleRtmMessage(message){
     }
 });
 
+var isFromDm = function(message){
+    if(message.channel && message.channel.id[0] == 'D'){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 var pingChannel = function(){
     var pickedUser = {name: '', id: ''};
     var userIds = Object.keys(rtm.dataStore.users);
@@ -180,9 +188,15 @@ var getSlackMessages = function(user, channelId){
                 console.log('no messages found for that user');
                 return;
             }
+
             var messages = [];
             responseData.messages.matches.forEach(function(match){
                 var message = match.text.trim();
+
+                if(isFromDm(match)){
+                    return;
+                }
+
                 //ignore commands to the bot itself
                 if(message.indexOf(atBot) == -1){
                     //make sure messages end in a punctuation
